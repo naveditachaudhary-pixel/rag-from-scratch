@@ -1,0 +1,32 @@
+# Core LangChain — let pip resolve compatible versions
+langchain>=0.3.14
+langchain-community>=0.3.14
+langchain-core>=0.3.33
+
+# Vector Stores
+faiss-cpu==1.13.2
+chromadb>=0.6.3
+
+# Embeddings (local, no API key needed)
+sentence-transformers>=3.4.1
+
+# LLM (local via Ollama OR OpenAI)
+langchain-ollama>=0.2.3
+openai>=1.61.1
+langchain-openai>=0.3.3
+
+# Document loaders
+pypdf>=5.2.0
+python-docx>=1.1.2
+
+# Text splitting / processing
+tiktoken>=0.8.0
+
+# Web server
+flask>=3.1.0
+flask-cors>=5.0.0
+
+# Utilities
+python-dotenv>=1.0.1
+pydantic>=2.11.0
+tqdm>=4.60.0
