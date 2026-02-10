@@ -1,0 +1,119 @@
+LangChain is an open-source framework designed to streamline the development of applications powered by large language models (LLMs). It provides composable abstractions and standardized interfaces that connect LLMs with external tools, data sources, and execution environments.
+
+== Core Abstractions ==
+
+LangChain Expression Language (LCEL):
+LCEL is a declarative, pipe-based syntax for composing chains. Instead of writing imperative code, you declare a pipeline using the pipe operator (|):
+
+    chain = retriever | format_docs | prompt | llm | output_parser
+
+Each component in the chain is a Runnable — anything that implements .invoke(), .stream(), and .batch(). This uniformity means you can swap components freely without changing the rest of the chain.
+
+Key Runnable methods:
+- .invoke(input): Single synchronous call
+- .stream(input): Iterator that yields chunks as they arrive
+- .batch(inputs): Process multiple inputs in parallel
+- .ainvoke(input): Async version of invoke
+- .astream(input): Async streaming
+
+== Document Loaders ==
+
+LangChain provides loaders for virtually any data source:
+- PyPDFLoader: Extract text from PDF files page by page
+- TextLoader: Load plain text files with encoding handling
+- Docx2txtLoader: Extract content from Microsoft Word documents
+- WebBaseLoader: Scrape and load web pages
+- CSVLoader: Load tabular data from CSV files
+- DirectoryLoader: Recursively load all supported files in a directory
+
+All loaders return a list of Document objects with .page_content (str) and .metadata (dict) attributes.
+
+== Text Splitters ==
+
+RecursiveCharacterTextSplitter is the recommended default. It tries to split on:
+1. Double newline (\n\n) — paragraph boundaries
+2. Single newline (\n) — line boundaries
+3. Period + space (. ) — sentence boundaries
+4. Single space — word boundaries
+5. Individual characters — last resort
+
+This preserves semantic structure while guaranteeing chunk size constraints.
+
+Parameters:
+- chunk_size: Maximum characters per chunk (e.g., 512)
+- chunk_overlap: Characters shared between consecutive chunks (e.g., 64)
+- length_function: How to measure chunk size (len for characters, or tiktoken for tokens)
+
+== Embeddings ==
+
+LangChain wraps multiple embedding providers behind a unified interface:
+
+HuggingFaceEmbeddings: Run embedding models locally using the sentence-transformers library. No API key required. Supports hundreds of models from the HuggingFace Hub.
+
+OpenAIEmbeddings: Use OpenAI's text-embedding-ada-002 or newer models via API. Higher dimensional (1536-d) but requires paid API access.
+
+CohereEmbeddings: Cohere's multilingual embedding models with optional re-ranking.
+
+== Vector Stores in LangChain ==
+
+All vector stores implement the same interface:
+- .from_documents(docs, embedding): Create a new store from documents
+- .similarity_search(query, k): Return top-k most similar documents
+- .similarity_search_with_score(query, k): Same but includes similarity scores
+- .as_retriever(**kwargs): Wrap as a Runnable Retriever for use in chains
+
+FAISS integration:
+    store = FAISS.from_documents(chunks, embeddings)
+    store.save_local("./vectorstore")
+    store = FAISS.load_local("./vectorstore", embeddings, allow_dangerous_deserialization=True)
+
+Chroma integration:
+    store = Chroma.from_documents(chunks, embeddings, persist_directory="./chroma_db")
+    store = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
+
+== Retrieval Strategies ==
+
+Similarity search (default): Find the K vectors closest to the query vector by cosine similarity.
+
+MMR (Maximum Marginal Relevance): Penalize retrieved chunks that are too similar to each other. Encourages diversity in the context.
+    retriever = store.as_retriever(search_type="mmr", search_kwargs={"k": 5, "fetch_k": 20})
+
+Similarity with score threshold: Only return chunks above a minimum relevance score.
+    retriever = store.as_retriever(search_type="similarity_score_threshold", search_kwargs={"score_threshold": 0.75})
+
+== Prompt Templates ==
+
+PromptTemplate: Simple string interpolation with variable placeholders.
+    prompt = PromptTemplate(template="Answer based on: {context}\n\nQuestion: {question}", input_variables=["context", "question"])
+
+ChatPromptTemplate: Structured for chat models with system/human/AI message roles.
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "You are a helpful assistant."),
+        ("human", "{question}")
+    ])
+
+== Output Parsers ==
+
+StrOutputParser: Extract the content field from an AIMessage as a plain string.
+PydanticOutputParser: Parse LLM output as a structured Pydantic model.
+JsonOutputParser: Parse LLM output as JSON.
+
+== Memory and Conversation History ==
+
+For multi-turn conversations, LangChain provides memory abstractions:
+- ConversationBufferMemory: Store entire conversation history
+- ConversationSummaryMemory: Summarize old messages to save tokens
+- ConversationBufferWindowMemory: Keep only the last K exchanges
+
+These can be integrated into chains using RunnableWithMessageHistory.
+
+== Agents and Tools ==
+
+Beyond chains, LangChain supports agentic systems where an LLM decides which tools to call:
+- Tools: Python functions wrapped with a name and description that the LLM can invoke
+- AgentExecutor: Runtime that handles tool calling, observation, and iteration until the task is complete
+- ReAct agents: Reason → Act → Observe loop, excellent for multi-step tasks
+
+== LangSmith (Observability) ==
+
+LangSmith is LangChain's observability platform. Set LANGCHAIN_TRACING_V2=true and LANGCHAIN_API_KEY to automatically trace every chain invocation, enabling debugging, evaluation, and dataset creation.
