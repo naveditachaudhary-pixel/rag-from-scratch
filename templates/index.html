@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAG from Scratch — Retrieval-Augmented Generation</title>
+  <meta name="description" content="Build and query your own RAG system using LangChain, FAISS/Chroma, and local embeddings. Upload documents, index them, and get AI-powered answers grounded in your data." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <!-- ── Ambient background ─────────────────────────────────────────────── -->
+  <div class="ambient-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div>
+          <span class="logo-title">RAG from Scratch</span>
+          <span class="logo-sub">Retrieval-Augmented Generation</span>
+        </div>
+      </div>
+      <div id="status-badge" class="status-badge status-unknown">
+        <span class="status-dot"></span>
+        <span id="status-text">Checking…</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Main Layout ────────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- LEFT PANEL: Architecture + Ingest -->
+    <aside class="sidebar">
+
+      <!-- Architecture overview -->
+      <section class="card card-arch">
+        <h2 class="card-title">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/><circle cx="12" cy="2" r="1"/><circle cx="12" cy="22" r="1"/>
+            <circle cx="2" cy="12" r="1"/><circle cx="22" cy="12" r="1"/>
+            <path d="M12 5v4M12 15v4M5 12h4M15 12h4"/>
+          </svg>
+          How RAG Works
+        </h2>
+        <div class="pipeline">
+          <div class="pipeline-step" id="step-ingest">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <strong>Ingest</strong>
+              <span>Load → Chunk → Embed → Store</span>
+            </div>
+            <div class="step-icon">📄</div>
+          </div>
+          <div class="pipeline-arrow">↓</div>
+          <div class="pipeline-step" id="step-retrieve">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <strong>Retrieve</strong>
+              <span>Query → Embed → Similarity Search</span>
+            </div>
+            <div class="step-icon">🔍</div>
+          </div>
+          <div class="pipeline-arrow">↓</div>
+          <div class="pipeline-step" id="step-generate">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <strong>Generate</strong>
+              <span>Context + Question → LLM → Answer</span>
+            </div>
+            <div class="step-icon">🧠</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Config info -->
+      <section class="card card-config" id="config-panel">
+        <h2 class="card-title">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.07 4.93a10 10 0 0 0-14.14 0M4.93 19.07a10 10 0 0 0 14.14 0"/>
+          </svg>
+          System Config
+        </h2>
+        <div class="config-grid">
+          <div class="config-item">
+            <span class="config-label">LLM</span>
+            <code id="cfg-llm" class="config-value">—</code>
+          </div>
+          <div class="config-item">
+            <span class="config-label">Embeddings</span>
+            <code id="cfg-embed" class="config-value">—</code>
+          </div>
+          <div class="config-item">
+            <span class="config-label">Vector Store</span>
+            <code id="cfg-store" class="config-value">—</code>
+          </div>
+        </div>
+      </section>
+
+      <!-- Upload / Ingest -->
+      <section class="card card-upload">
+        <h2 class="card-title">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          Upload &amp; Index
+        </h2>
+
+        <div id="drop-zone" class="drop-zone" role="button" tabindex="0" aria-label="Upload documents">
+          <div class="drop-icon">📂</div>
+          <p>Drop PDF, TXT, MD, or DOCX files</p>
+          <p class="drop-sub">or click to browse</p>
+          <input type="file" id="file-input" multiple accept=".pdf,.txt,.md,.docx" style="display:none" />
+        </div>
+
+        <div id="file-list" class="file-list" style="display:none"></div>
+
+        <div class="upload-actions">
+          <button id="btn-ingest" class="btn btn-primary" disabled>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            Index Documents
+          </button>
+          <button id="btn-sample" class="btn btn-ghost">Load Sample</button>
+        </div>
+
+        <div id="ingest-progress" class="progress-wrap" style="display:none">
+          <div class="progress-bar"><div class="progress-fill animate-progress"></div></div>
+          <span id="ingest-status" class="progress-label">Indexing…</span>
+        </div>
+      </section>
+
+    </aside>
+
+    <!-- RIGHT PANEL: Chat -->
+    <section class="chat-panel">
+
+      <!-- Chat messages -->
+      <div id="chat-messages" class="chat-messages">
+        <div class="welcome-msg">
+          <div class="welcome-icon">🚀</div>
+          <h3>Ready to explore your documents</h3>
+          <p>Upload documents on the left, then ask any question — your answers will be grounded in your own data, not hallucinations.</p>
+          <div class="example-queries">
+            <p class="example-label">Try asking:</p>
+            <button class="example-btn" onclick="setQuery('What are the main topics covered in the documents?')">What are the main topics covered?</button>
+            <button class="example-btn" onclick="setQuery('Summarize the key points from the documents.')">Summarize the key points</button>
+            <button class="example-btn" onclick="setQuery('What methodology or approach is described?')">What methodology is described?</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input bar -->
+      <div class="chat-input-wrap">
+        <div class="chat-input-inner">
+          <textarea
+            id="chat-input"
+            class="chat-input"
+            placeholder="Ask anything about your documents…"
+            rows="1"
+            maxlength="2000"
+            aria-label="Ask a question"
+          ></textarea>
+          <button id="btn-send" class="btn-send" aria-label="Send message" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+        <p class="chat-footer">Answers grounded in your documents · Powered by LangChain + FAISS/Chroma</p>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ── Toast notifications ────────────────────────────────────────────── -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
