@@ -1,0 +1,20 @@
+# Fine-Tuning Dependencies (install separately from main requirements)
+# Run: pip install -r requirements-finetune.txt
+
+# Core training libraries
+transformers>=4.40.0     # model loading, tokenizers
+peft>=0.10.0             # LoRA / QLoRA adapter framework
+trl>=0.8.6               # SFTTrainer, reward modelling
+datasets>=2.18.0         # dataset loading and processing
+accelerate>=0.28.0       # multi-GPU / distributed training support
+
+# Quantization (QLoRA) — requires CUDA GPU
+# Uncomment the line below if you have an NVIDIA GPU:
+# bitsandbytes>=0.43.0
+
+# Evaluation
+evaluate>=0.4.0          # ROUGE, BLEU, perplexity metrics
+
+# (already in requirements.txt, listed here for clarity)
+# torch>=2.0.0
+# huggingface-hub>=0.20.0
