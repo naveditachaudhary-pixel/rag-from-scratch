@@ -272,7 +272,7 @@ def train(
         packing=True,                            # pack short examples for speed
         logging_steps=logging_steps,
         save_steps=save_steps,
-        evaluation_strategy="steps",
+        eval_strategy="steps",                   # renamed from evaluation_strategy in TRL 0.28+
         eval_steps=save_steps,
         save_total_limit=2,
         load_best_model_at_end=True,
