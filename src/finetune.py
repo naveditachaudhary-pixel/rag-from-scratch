@@ -413,10 +413,10 @@ def main():
                         help="Path to JSONL training dataset")
     parser.add_argument("--output",      default="./models/lora-adapter",
                         help="Directory to save the LoRA adapter")
-    parser.add_argument("--epochs",      type=int,   default=3)
+    parser.add_argument("--epochs",      type=int,   default=5)
     parser.add_argument("--batch-size",  type=int,   default=2)
     parser.add_argument("--lr",          type=float, default=2e-4)
-    parser.add_argument("--lora-r",      type=int,   default=16,  help="LoRA rank")
+    parser.add_argument("--lora-r",      type=int,   default=32,  help="LoRA rank")
     parser.add_argument("--quantize",    action="store_true",     help="Enable 4-bit QLoRA")
     parser.add_argument("--hf-token",    default=None,            help="HuggingFace token (for gated models)")
     parser.add_argument("--test-only",   action="store_true",     help="Skip training, just test saved adapter")

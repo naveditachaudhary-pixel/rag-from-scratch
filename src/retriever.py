@@ -20,8 +20,14 @@ from langchain_core.documents import Document
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS, Chroma
 from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnablePassthrough, RunnableParallel
+from langchain_core.runnables import RunnablePassthrough, RunnableParallel, RunnableLambda
 from langchain_core.output_parsers import StrOutputParser
+
+try:
+    from sentence_transformers import CrossEncoder
+    _cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2', device='cpu')
+except ImportError:
+    _cross_encoder = None
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -45,14 +51,14 @@ def load_vector_store(
     )
 
     if store_type == "faiss":
-        logger.info(f"📦 Loading FAISS index from: {persist_path}")
+        logger.info(f" Loading FAISS index from: {persist_path}")
         store = FAISS.load_local(
             persist_path,
             embeddings,
             allow_dangerous_deserialization=True,
         )
     elif store_type == "chroma":
-        logger.info(f"📦 Loading Chroma DB from: {persist_path}")
+        logger.info(f"Loading Chroma DB from: {persist_path}")
         store = Chroma(
             persist_directory=persist_path,
             embedding_function=embeddings,
@@ -60,7 +66,7 @@ def load_vector_store(
     else:
         raise ValueError(f"Unknown store: {store_type}")
 
-    logger.info("✅ Vector store loaded successfully")
+    logger.info("Vector store loaded successfully")
     return store
 
 
@@ -80,7 +86,7 @@ def retrieve_chunks(store, query: str, top_k: int = 4) -> List[Tuple[Document, f
     This is the CORE of RAG — grounding the LLM in your actual documents.
     """
     results = store.similarity_search_with_score(query, k=top_k)
-    logger.info(f"🔍 Retrieved {len(results)} chunks for query: '{query[:60]}...'")
+    logger.info(f"Retrieved {len(results)} chunks for query: '{query[:60]}...'")
     for i, (doc, score) in enumerate(results):
         source = doc.metadata.get("source", "unknown")
         logger.info(f"   [{i+1}] score={score:.4f} | source={source}")
@@ -104,16 +110,16 @@ def get_llm(provider: str = None, model: str = None):
         api_key = os.getenv("OPENAI_API_KEY", "")
         if not api_key or api_key.startswith("sk-your"):
             raise ValueError(
-                "❌ OpenAI API key not set. Either:\n"
+                "OpenAI API key not set. Either:\n"
                 "   • Set OPENAI_API_KEY in .env, OR\n"
                 "   • Switch to Ollama: LLM_PROVIDER=ollama in .env"
             )
-        logger.info(f"🧠 Using OpenAI model: {model}")
+        logger.info(f"Using OpenAI model: {model}")
         return ChatOpenAI(model=model, api_key=api_key, temperature=0.1)
 
     elif provider == "ollama":
         from langchain_ollama import ChatOllama
-        logger.info(f"🦙 Using Ollama model: {model} (local)")
+        logger.info(f"Using Ollama model: {model} (local)")
         return ChatOllama(model=model, temperature=0.1)
 
     else:
@@ -164,10 +170,39 @@ def build_rag_chain(store, llm):
            ↓
         [Parser]    → extract string response
     """
+    # Fetch more documents initially for the reranker to evaluate
+    base_k = int(os.getenv("TOP_K_RESULTS", 10))
     retriever = store.as_retriever(
         search_type="similarity",
-        search_kwargs={"k": int(os.getenv("TOP_K_RESULTS", 4))},
+        search_kwargs={"k": base_k},
     )
+
+    def retrieve_and_rerank(query: str) -> List[Document]:
+        """Fetch base documents and re-rank them using a CrossEncoder."""
+        base_docs = retriever.invoke(query)
+        
+        final_k = int(os.getenv("TOP_K_RERANK", 3))
+        
+        if not _cross_encoder or len(base_docs) == 0:
+            if not _cross_encoder:
+                logger.warning("CrossEncoder not loaded. Returning un-reranked top K.")
+            return base_docs[:final_k]
+            
+        # Prepare pairs for the cross-encoder: (query, doc_text)
+        pairs = [[query, doc.page_content] for doc in base_docs]
+        scores = _cross_encoder.predict(pairs)
+        
+        # Sort documents by their cross-encoder score in descending order
+        scored_docs = sorted(zip(base_docs, scores), key=lambda x: x[1], reverse=True)
+        
+        logger.info(f"🔄 Reranked top {len(base_docs)} documents.")
+        for i, (doc, score) in enumerate(scored_docs[:final_k]):
+            source = doc.metadata.get('source', 'Unknown')
+            logger.info(f"   [{i+1}] score={score:.4f} | source={source}")
+            
+        return [doc for doc, score in scored_docs[:final_k]]
+
+    reranker_runnable = RunnableLambda(retrieve_and_rerank)
 
     def format_docs(docs: List[Document]) -> str:
         """Convert retrieved docs into a single numbered context block."""
@@ -181,14 +216,14 @@ def build_rag_chain(store, llm):
 
     chain = (
         RunnableParallel(
-            context=retriever | format_docs,
+            context=reranker_runnable | format_docs,
             question=RunnablePassthrough(),
         )
         | RAG_PROMPT
         | llm
         | StrOutputParser()
     )
-    return chain, retriever
+    return chain, reranker_runnable
 
 
 # ─────────────────────────────────────────────────────────────────────────────

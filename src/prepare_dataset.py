@@ -43,6 +43,7 @@ Rules:
 - Questions should be specific, meaningful, and diverse in style
 - Answers must be grounded entirely in the provided text
 - Do NOT invent information not present in the text
+- Sometimes (about 20% of the time), generate a plausible question that is NOT answered by the text. For these, the answer MUST be exactly: "I am sorry, but the provided context does not contain the answer."
 - Format each pair as a JSON object on its own line: {{"question": "...", "answer": "..."}}
 - Output ONLY the JSON lines, no other text
 
@@ -67,11 +68,14 @@ def generate_qa_from_chunk(chunk_text: str, llm, num_questions: int = 3) -> List
                 try:
                     pair = json.loads(line)
                     if "question" in pair and "answer" in pair:
-                        pairs.append({
-                            "instruction": pair["question"].strip(),
-                            "input": "",
-                            "output": pair["answer"].strip(),
-                        })
+                        q = pair["question"].strip()
+                        a = pair["answer"].strip()
+                        if len(q) > 10 and len(a) > 2: # Basic validation
+                            pairs.append({
+                                "instruction": q,
+                                "input": "",
+                                "output": a,
+                            })
                 except json.JSONDecodeError:
                     continue
         return pairs
@@ -85,7 +89,7 @@ def prepare_dataset(
     source: str,
     output_path: str,
     num_questions_per_chunk: int = 3,
-    max_chunks: int = 50,
+    max_chunks: int = 200,
 ) -> int:
     """
     Full dataset preparation pipeline.
@@ -148,7 +152,7 @@ if __name__ == "__main__":
     parser.add_argument("--source",        default="./data/sample_docs", help="Document source path")
     parser.add_argument("--output",        default="./data/training/qa_pairs.jsonl", help="Output JSONL path")
     parser.add_argument("--num-questions", type=int, default=3,  help="Q&A pairs per chunk")
-    parser.add_argument("--max-chunks",    type=int, default=50, help="Max chunks to process")
+    parser.add_argument("--max-chunks",    type=int, default=200, help="Max chunks to process")
     args = parser.parse_args()
 
     total = prepare_dataset(args.source, args.output, args.num_questions, args.max_chunks)
