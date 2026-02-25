@@ -292,7 +292,14 @@ def train(
     logger.info(f"  Epochs: {num_epochs}")
     logger.info(f"  Learning rate: {learning_rate}")
 
-    trainer.train()
+    # Check for existing checkpoints to resume from
+    from transformers.trainer_utils import get_last_checkpoint
+    last_checkpoint = get_last_checkpoint(output_dir)
+    if last_checkpoint is not None:
+        logger.info(f"Resuming training from checkpoint: {last_checkpoint}")
+        trainer.train(resume_from_checkpoint=last_checkpoint)
+    else:
+        trainer.train()
 
     logger.info(f"Training complete! Saving LoRA adapter to: {output_dir}")
     trainer.model.save_pretrained(output_dir)
