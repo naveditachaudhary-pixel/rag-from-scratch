@@ -429,6 +429,7 @@ def main():
     parser.add_argument("--test-only",   action="store_true",     help="Skip training, just test saved adapter")
     parser.add_argument("--test-q",      default="What is RAG and how does it work?",
                         help="Question to use for the inference test after training")
+    parser.add_argument("--save-steps",  type=int,   default=5,   help="Save checkpoint every X steps")
     args = parser.parse_args()
 
     print(f"\n{'='*60}")
@@ -468,6 +469,7 @@ def main():
         num_epochs=args.epochs,
         batch_size=args.batch_size,
         learning_rate=args.lr,
+        save_steps=args.save_steps,
     )
 
     # Test inference
