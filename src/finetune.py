@@ -162,7 +162,7 @@ def load_model_and_tokenizer(
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
         quantization_config=bnb_config,
-        device_map="auto",                      # auto-selects GPU/CPU
+        device_map="auto" if torch.cuda.is_available() else "cpu",
         trust_remote_code=True,
         torch_dtype=torch.float16 if not use_4bit else None,
         **kwargs,
@@ -265,9 +265,9 @@ def train(
         learning_rate=learning_rate,
         warmup_ratio=warmup_ratio,
         lr_scheduler_type="cosine",
-        optim="adamw_torch",
         fp16=torch.cuda.is_available(),          # use FP16 if GPU available
-        max_seq_length=max_seq_length,
+        use_cpu=not torch.cuda.is_available(),   # use CPU if GPU not available
+        max_length=max_seq_length,
         dataset_text_field="text",
         packing=True,                            # pack short examples for speed
         logging_steps=logging_steps,
@@ -281,7 +281,7 @@ def train(
 
     trainer = SFTTrainer(
         model=model,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         train_dataset=train_ds,
         eval_dataset=eval_ds,
         args=sft_config,
@@ -327,7 +327,7 @@ def test_inference(adapter_dir: str, test_question: str = "What is RAG?"):
     tokenizer = AutoTokenizer.from_pretrained(adapter_dir)
     base_model = AutoModelForCausalLM.from_pretrained(
         base_model_name,
-        device_map="auto",
+        device_map="auto" if torch.cuda.is_available() else "cpu",
         torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
     )
     model = PeftModel.from_pretrained(base_model, adapter_dir)
@@ -351,7 +351,7 @@ def test_inference(adapter_dir: str, test_question: str = "What is RAG?"):
 
     print(f"\n{'='*60}")
     print(f"Question : {test_question}")
-    print(f"{'─'*60}")
+    print(f"{'-'*60}")
     print(f"Answer   : {response}")
     print(f"{'='*60}")
     return response

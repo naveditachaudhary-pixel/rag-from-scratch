@@ -1,0 +1,6 @@
+{"instruction": "What is the purpose of the pipe operator in LangChain Expression Language (LCEL)?", "input": "", "output": "It is used to declare a pipeline for composing chains."}
+{"instruction": "How does one compose a chain using the LangChain Expression Language (LCEL) syntax?", "input": "", "output": "Using the pipe operator (|)."}
+{"instruction": "What is the purpose of implementing .invoke(), .stream(), and .batch() methods in a chain?", "input": "", "output": "This uniformity means you can swap components freely without changing the rest of the chain."}
+{"instruction": "How does the .batch(inputs) method process multiple inputs?", "input": "", "output": "Process multiple inputs in parallel"}
+{"instruction": "What is the purpose of LangChain's PyPDFLoader?", "input": "", "output": "Extract text from PDF files page by page"}
+{"instruction": "How does LangChain's CSVLoader handle encoding when loading plain text files?", "input": "", "output": "Load tabular data from CSV files with encoding handling"}

@@ -260,13 +260,13 @@ if __name__ == "__main__":
     llm         = get_llm()
 
     print(f"\n{'='*60}")
-    print(f"❓ Query: {args.query}")
+    print(f"Query: {args.query}")
     print(f"{'='*60}\n")
 
     result = query_rag(args.query, vectorstore, llm)
-    print(f"💬 Answer:\n{result['answer']}\n")
-    print(f"{'─'*60}")
-    print(f"📚 Sources ({len(result['sources'])} chunks retrieved):")
+    print(f"Answer:\n{result['answer']}\n")
+    print("="*60)
+    print(f"Sources ({len(result['sources'])} chunks retrieved):")
     for i, src in enumerate(result['sources'], 1):
         print(f"\n  [{i}] {src['source']}" + (f" (p.{src['page']})" if src['page'] else ""))
         print(f"      {src['content'][:150]}...")

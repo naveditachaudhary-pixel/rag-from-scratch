@@ -208,7 +208,7 @@ if __name__ == "__main__":
 
     result = ingest(args.source, args.store, args.path)
     print("\n" + "="*50)
-    print("🎉 Ingestion Complete!")
+    print("🎉 Ingestion Complete!".encode('utf-8').decode('cp1252', 'ignore'))
     print(f"   Documents : {result['documents']}")
     print(f"   Chunks    : {result['chunks']}")
     print(f"   Store     : {result['store']}")
