@@ -26,7 +26,7 @@ Most RAG tutorials hand you a 5-line wrapper around a paid API. This project bui
 
 ---
 
-## 🤖 The AI Agents (Core Pipeline)
+## The AI Agents (Core Pipeline)
 
 Rather than relying on a single, monolithic LLM prompt, this system distributes cognitive workloads across specialized, autonomous AI components (Agents) to ensure high-accuracy, hallucination-free output. By separating concerns, each agent can be independently optimized, monitored, and scaled.
 
