@@ -28,12 +28,19 @@ Most RAG tutorials hand you a 5-line wrapper around a paid API. This project bui
 
 ## 🤖 The AI Agents (Core Pipeline)
 
-Rather than relying on a single monolithic LLM prompt, this system distributes the workload across specialized AI processing components (agents) to ensure high-accuracy, hallucination-free output:
+Rather than relying on a single, monolithic LLM prompt, this system distributes cognitive workloads across specialized, autonomous AI components (Agents) to ensure high-accuracy, hallucination-free output. By separating concerns, each agent can be independently optimized, monitored, and scaled.
 
-1. **The Ingestion Agent (`src/ingest.py`)** — The knowledge builder. Responsible for reading raw documents, structurally chunking them with semantic overlap, computing high-dimensional vector embeddings, and structuring them into a persistent FAISS or Chroma database.
-2. **The Retrieval & Reranking Agent (`src/retriever.py`)** — The memory engine. It parses the user query, performs a fast initial top-k vector search to find candidate documents, and then uses a secondary Deep Learning model (Cross-Encoder) to critically re-score and perfectly rank the context.
-3. **The Generation Agent (`src/app.py`)** — The communicator. It synthesizes the perfectly ranked context with the user's instructions through a LangChain pipe, forcing the LLM to ground its answers exclusively in the provided text while streaming tokens and citing its exact sources in real-time.
-4. **The Dataset & Training Agents (`src/prepare_dataset.py`, `src/finetune.py`)** — The domain-adaptation engine. It autonomously analyzes raw text to generate plausible Q&A pairs (including adversarial/unanswerable questions) and handles the complex mathematics of injecting Low-Rank Adapters (LoRA) back into the base LLM weights.
+### 1. The Ingestion Agent (`src/ingest.py`) — *The Knowledge Builder*
+Responsible for reading raw document streams, logically chunking them with semantic overlap, computing high-dimensional vector representations, and organizing them into a persistent vector database (FAISS/Chroma). This agent acts as the foundational memory encoder for the system.
+
+### 2. The Retrieval & Reranking Agent (`src/retriever.py`) — *The Memory Engine*
+When a user asks a query, this agent takes over. It performs a rapid top-k semantic vector search to find candidate knowledge blocks. It then employs a secondary Deep Learning model (a Cross-Encoder) to critically evaluate, re-score, and perfectly rank the retrieved context against the user's explicit intent.
+
+### 3. The Generation Agent (`src/app.py`) — *The Communicator*
+This agent synthesizes the perfectly ranked context provided by the Retrieval Agent with the user's instructions via a declarative LangChain LCEL pipe. It strictly forces the underlying LLM to ground its answers exclusively in the provided text, while simultaneously streaming tokens and citing its exact sources to the end-user in real-time.
+
+### 4. The Domain-Adaptation Agents (`src/prepare_dataset.py`, `src/finetune.py`) — *The Trainers*
+A sub-system of agents dedicated to continuous improvement. They autonomously analyze raw text corpuses to synthesize highly plausible Q&A training pairs (including adversarial, unanswerable scenarios). Furthermore, they handle the complex mathematics of injecting and training Low-Rank Adapters (LoRA) back into the base LLM weights, effectively teaching the model new, domain-specific expertise.
 
 ---
 
