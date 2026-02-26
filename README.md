@@ -26,6 +26,17 @@ Most RAG tutorials hand you a 5-line wrapper around a paid API. This project bui
 
 ---
 
+## 🤖 The AI Agents (Core Pipeline)
+
+Rather than relying on a single monolithic LLM prompt, this system distributes the workload across specialized AI processing components (agents) to ensure high-accuracy, hallucination-free output:
+
+1. **The Ingestion Agent (`src/ingest.py`)** — The knowledge builder. Responsible for reading raw documents, structurally chunking them with semantic overlap, computing high-dimensional vector embeddings, and structuring them into a persistent FAISS or Chroma database.
+2. **The Retrieval & Reranking Agent (`src/retriever.py`)** — The memory engine. It parses the user query, performs a fast initial top-k vector search to find candidate documents, and then uses a secondary Deep Learning model (Cross-Encoder) to critically re-score and perfectly rank the context.
+3. **The Generation Agent (`src/app.py`)** — The communicator. It synthesizes the perfectly ranked context with the user's instructions through a LangChain pipe, forcing the LLM to ground its answers exclusively in the provided text while streaming tokens and citing its exact sources in real-time.
+4. **The Dataset & Training Agents (`src/prepare_dataset.py`, `src/finetune.py`)** — The domain-adaptation engine. It autonomously analyzes raw text to generate plausible Q&A pairs (including adversarial/unanswerable questions) and handles the complex mathematics of injecting Low-Rank Adapters (LoRA) back into the base LLM weights.
+
+---
+
 ## Architecture
 
 ```
@@ -86,14 +97,14 @@ Most RAG tutorials hand you a 5-line wrapper around a paid API. This project bui
 
 ## Features
 
-- **Zero-cost embeddings** — `all-MiniLM-L6-v2` runs 100% locally (~90MB), no OpenAI key needed for retrieval
-- **Swappable vector store** — switch between FAISS (fast, in-memory) and Chroma (persistent DB) with one `.env` line
-- **Dual LLM support** — Ollama (free, local) or OpenAI, configurable without code changes
-- **Streaming UI** — answers appear token-by-token with Server-Sent Events, just like ChatGPT
-- **Source citations** — every answer shows exactly which document chunks were retrieved
-- **LoRA fine-tuning** — train a domain-specific LLM in hours on a consumer GPU (or overnight on CPU)
-- **Auto dataset generation** — uses your LLM to automatically write Q&A training pairs from your documents
-- **Dark glassmorphism UI** — drag-and-drop file upload, live pipeline visualization, streaming chat
+- **Advanced Retrieval System** — Two-stage retrieval using FAISS for fast similarity search and `cross-encoder/ms-marco-MiniLM-L-6-v2` for high-accuracy semantic reranking.
+- **Zero-cost embeddings** — All embedding and reranking models run 100% locally, requiring no API keys.
+- **Dual LLM support** — Select between Ollama (free, local) or OpenAI effortlessly via the `.env` configuration.
+- **Streaming UI** — Answers stream token-by-token with Server-Sent Events alongside real-time transparent source citations.
+- **LoRA Fine-Tuning Engine** — Train a domain-specific LLM natively on a consumer GPU or CPU using TRL, complete with automated checkpoint resumption.
+- **Autonomous Dataset Generation** — Auto-generates sophisticated Q&A training pairs (including negative/unanswerable scenarios) directly from your documents.
+- **External Dataset Integration** — Built-in pipelines to automatically fetch and format massive public datasets (like SQuAD v2.0) into Alpaca JSONL formats for immediate fine-tuning.
+- **Dark glassmorphism UI** — Modern, responsive drag-and-drop web interface.
 
 ---
 
