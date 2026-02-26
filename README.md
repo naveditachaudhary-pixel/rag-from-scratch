@@ -30,17 +30,17 @@ Most RAG tutorials hand you a 5-line wrapper around a paid API. This project bui
 
 Rather than relying on a single, monolithic LLM prompt, this system distributes cognitive workloads across specialized, autonomous AI components (Agents) to ensure high-accuracy, hallucination-free output. By separating concerns, each agent can be independently optimized, monitored, and scaled.
 
-### 1. The Ingestion Agent (`src/ingest.py`) — *The Knowledge Builder*
-Responsible for reading raw document streams, logically chunking them with semantic overlap, computing high-dimensional vector representations, and organizing them into a persistent vector database (FAISS/Chroma). This agent acts as the foundational memory encoder for the system.
+### 1. The Ingestion Agent (`src/ingest.py`) — *The Librarian*
+Before anyone asks a question, this agent reads all uploaded PDFs, Word docs, and text files. It uses a complex mathematical model (`all-MiniLM-L6-v2`) to convert every sentence into a multi-dimensional map of numbers (vector embeddings). By chopping documents into overlapping blocks and saving them into a high-speed database (FAISS/Chroma), it captures the true *meaning* of the text, not just keywords. This agent acts as the foundational memory encoder for the system.
 
-### 2. The Retrieval & Reranking Agent (`src/retriever.py`) — *The Memory Engine*
-When a user asks a query, this agent takes over. It performs a rapid top-k semantic vector search to find candidate knowledge blocks. It then employs a secondary Deep Learning model (a Cross-Encoder) to critically evaluate, re-score, and perfectly rank the retrieved context against the user's explicit intent.
+### 2. The Retrieval & Reranking Agent (`src/retriever.py`) — *The Lead Researcher*
+When you ask a query, this agent springs into action. First, it performs a rapid top-k semantic vector search to pull candidate knowledge blocks. However, finding top matches isn't enough; it then employs a secondary Deep Learning model (a Cross-Encoder) acting as a harsh critic to re-score and perfectly rank the retrieved context against your explicit intent, discarding irrelevant paragraphs.
 
-### 3. The Generation Agent (`src/app.py`) — *The Communicator*
-This agent synthesizes the perfectly ranked context provided by the Retrieval Agent with the user's instructions via a declarative LangChain LCEL pipe. It strictly forces the underlying LLM to ground its answers exclusively in the provided text, while simultaneously streaming tokens and citing its exact sources to the end-user in real-time.
+### 3. The Generation Agent (`src/app.py` & `app.js`) — *The Spokesperson*
+This agent synthesizes the perfectly ranked research provided by the Retrieval Agent with your instructions via a declarative LangChain LCEL pipe. Powered by the primary LLM (e.g., Llama 3.2), it is strictly forced to ground its answers exclusively in the provided text. It guarantees hallucination-free output by simultaneously streaming tokens and citing its exact sources to the end-user in real-time.
 
-### 4. The Domain-Adaptation Agents (`src/prepare_dataset.py`, `src/finetune.py`) — *The Trainers*
-A sub-system of agents dedicated to continuous improvement. They autonomously analyze raw text corpuses to synthesize highly plausible Q&A training pairs (including adversarial, unanswerable scenarios). Furthermore, they handle the complex mathematics of injecting and training Low-Rank Adapters (LoRA) back into the base LLM weights, effectively teaching the model new, domain-specific expertise.
+### 4. The Domain-Adaptation Agents (`src/prepare_dataset.py`, `src/finetune.py`) — *The Tutors*
+A sub-system dedicated to continuous improvement that runs in the background. They autonomously act like teachers writing a pop-quiz—analyzing raw text to synthesize highly plausible Q&A training pairs (including adversarial scenarios). They then handle the complex mathematics of injecting and training Low-Rank Adapters (LoRA), forcing a smaller LLM to take the quiz thousands of times until domain-specific expertise is permanently encoded into the base LLM weights.
 
 ---
 
